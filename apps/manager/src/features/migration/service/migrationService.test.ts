@@ -110,6 +110,7 @@ import {
   temporaryMigrationHcaApproval,
 } from './migrationApprovals'
 import {
+  loadMigrationBatchJournal,
   loadMigrationRecoverySnapshot,
   loadPendingAtomicMigrationIntents,
   loadSubmittedAtomicMigrationBatches,
@@ -1883,6 +1884,51 @@ describe('executeMigration HCA orchestration', () => {
     expect(mocks.startTransaction).not.toHaveBeenCalled()
   })
 
+  it('publishes recovery and attempt evidence together for a direct-only plan', async () => {
+    const scope = { chainId: 11155111, owner: OWNER, hca: HCA }
+    const observations: ReturnType<typeof loadMigrationBatchJournal>[] = []
+    const unsubscribe = subscribeMigrationBatchJournal(() => {
+      observations.push(loadMigrationBatchJournal(scope))
+    })
+    let resolveHash!: (hash: Hex) => void
+    mocks.waitForTransactionHash.mockImplementationOnce(
+      () =>
+        new Promise<Hex>((resolve) => {
+          resolveHash = resolve
+        }),
+    )
+
+    const execution = runExecute()
+    await vi.waitFor(() =>
+      expect(mocks.startTransaction).toHaveBeenCalledOnce(),
+    )
+    const recovery = loadMigrationRecoverySnapshot(scope)
+    resolveHash(hashFor(1))
+    await execution
+    unsubscribe()
+
+    expect(recovery).toMatchObject({
+      registryOperations: [{ name: 'alice.eth', action: 'migrate' }],
+      remainingOperations: [{ name: 'alice.eth', action: 'migrate' }],
+    })
+    expect(
+      observations.some(
+        ({ recovery: snapshot, pending, submitted }) =>
+          snapshot !== null &&
+          snapshot.completedOperations.length === 0 &&
+          pending.length === 0 &&
+          submitted.length === 0,
+      ),
+    ).toBe(false)
+    expect(
+      observations.some(
+        ({ recovery: snapshot, pending }) =>
+          snapshot?.remainingOperations.length === 1 && pending.length === 1,
+      ),
+    ).toBe(true)
+    expect(loadMigrationRecoverySnapshot(scope)).toBeNull()
+  })
+
   it('durably records the batch intent before opening the wallet prompt', async () => {
     mocks.startTransaction.mockImplementationOnce(() => {
       expect(
@@ -1920,6 +1966,16 @@ describe('executeMigration HCA orchestration', () => {
         hca: HCA,
       }),
     ).toEqual([expect.objectContaining({ names: ['alice.eth'] })])
+    expect(
+      loadMigrationRecoverySnapshot({
+        chainId: 11155111,
+        owner: OWNER,
+        hca: HCA,
+      }),
+    ).toMatchObject({
+      registryOperations: [{ name: 'alice.eth', action: 'migrate' }],
+      remainingOperations: [{ name: 'alice.eth', action: 'migrate' }],
+    })
 
     mocks.reconcileAtomicMigrationBatch.mockResolvedValueOnce({
       status: 'incomplete',
