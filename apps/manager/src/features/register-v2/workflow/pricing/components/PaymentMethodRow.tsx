@@ -1,5 +1,10 @@
-import { match } from 'ts-pattern'
+import { useLingui } from '@lingui/react/macro'
 import { MSymbol } from '@/components/ui/material-symbol'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export type PaymentMethodRowProps = {
@@ -15,9 +20,12 @@ export type PaymentMethodRowProps = {
   readonly onSelect: () => void
   readonly fee?: React.ReactNode
   readonly isFeeLoading?: boolean
+  readonly feeTooltip?: React.ReactNode
+  /** A reason this method can't pay yet, under the fee. */
+  readonly warning?: React.ReactNode
 }
 
-/** A selectable payment card: radio, token icon, name and fee, balance. */
+/** A selectable payment row: token icon, name and fee, balance. */
 export const PaymentMethodRow = ({
   name,
   icon,
@@ -30,78 +38,83 @@ export const PaymentMethodRow = ({
   onSelect,
   fee,
   isFeeLoading = false,
+  feeTooltip,
+  warning,
 }: PaymentMethodRowProps) => {
-  const isDisabled = !isAvailable
-  const hasFee = fee !== undefined || isFeeLoading
+  const { t } = useLingui()
 
   return (
     <div
       className={cn(
-        'relative grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-start gap-x-3 rounded-lg border p-3 text-left',
-        isSelected
-          ? 'border-ens-blue bg-ens-blue-light/30'
-          : 'border-ens-quartz-100',
+        'relative flex w-full items-start justify-between gap-3 rounded p-3 text-left',
+        isSelected && 'bg-ens-quartz-75',
       )}
       data-slot="payment-method-row"
     >
       <button
         aria-label={selectLabel}
         aria-pressed={isSelected}
-        className="absolute inset-0 z-0 rounded-lg outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ens-blue focus-visible:ring-offset-2 enabled:cursor-pointer enabled:hover:bg-black/[0.025] disabled:cursor-not-allowed"
-        disabled={isDisabled}
+        className="absolute inset-0 z-0 rounded outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ens-blue focus-visible:ring-offset-2 enabled:cursor-pointer enabled:hover:bg-black/[0.025] disabled:cursor-not-allowed"
+        disabled={!isAvailable}
         onClick={onSelect}
         type="button"
       />
 
-      <span
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none relative z-10 flex size-4 items-center justify-center self-center rounded-full border',
-          isSelected
-            ? 'border-ens-blue bg-ens-blue text-white'
-            : 'border-ens-quartz-350',
-        )}
-      >
-        {isSelected && (
-          <MSymbol className="ms-opsz-20 ms-wght-600 text-xs" symbol="check" />
-        )}
-      </span>
-
-      <span className="pointer-events-none relative z-10 self-start">
+      <span className="pointer-events-none relative z-10 flex min-w-0 items-start gap-2">
         {icon}
-      </span>
-
-      <span className="pointer-events-none relative z-10 flex min-w-0 flex-col self-start">
-        <span className="font-medium text-ens-quartz-900 text-sm leading-tight">
-          {name}
-        </span>
-        {hasFee && (
-          <span
-            className={cn(
-              'mt-1 truncate text-ens-quartz-400 text-xs leading-none',
-              isFeeLoading && 'animate-pulse',
-            )}
-          >
-            {fee ?? '—'}
+        <span className="flex min-w-0 flex-col">
+          <span className="font-medium text-ens-quartz-900 text-sm uppercase">
+            {name}
           </span>
-        )}
+          {(fee !== undefined || isFeeLoading) && (
+            <span
+              className={cn(
+                'flex min-w-0 items-center gap-0.5 text-ens-quartz-500 text-xs',
+                isFeeLoading && 'animate-pulse',
+              )}
+            >
+              <span className="truncate">{fee ?? '—'}</span>
+              {feeTooltip && (
+                <Tooltip>
+                  <TooltipTrigger
+                    aria-label={t`What is the network fee?`}
+                    className="pointer-events-auto relative z-20 flex shrink-0 items-center text-ens-quartz-350"
+                    type="button"
+                  >
+                    <MSymbol className="ms-opsz-16 ms-wght-400" symbol="info" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64 text-center">
+                    {feeTooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </span>
+          )}
+          {warning && (
+            <span className="flex items-center gap-0.5 text-ens-signal-danger-800 text-xs">
+              <MSymbol
+                aria-hidden="true"
+                className="ms-opsz-16 ms-wght-400 text-ens-signal-danger-500"
+                symbol="flash_off"
+              />
+              {warning}
+            </span>
+          )}
+        </span>
       </span>
 
-      <span className="pointer-events-none relative z-10 flex min-w-max flex-col items-end self-start">
+      <span className="pointer-events-none relative z-10 flex shrink-0 flex-col items-end">
         <span
           className={cn(
-            'text-right text-sm tabular-nums leading-tight',
-            match({ isInsufficient, isDisabled })
-              .with({ isInsufficient: true }, () => 'text-ens-error')
-              .with({ isDisabled: true }, () => 'text-ens-quartz-350')
-              .otherwise(() => 'text-ens-quartz-900'),
+            'text-right text-[15px] leading-[22px]',
+            isInsufficient
+              ? 'text-ens-signal-danger-800'
+              : 'text-ens-quartz-900',
           )}
         >
           {amount}
         </span>
-        <span className="mt-1 text-ens-quartz-400 text-xs leading-none">
-          {amountLabel}
-        </span>
+        <span className="text-ens-quartz-400 text-xs">{amountLabel}</span>
       </span>
     </div>
   )

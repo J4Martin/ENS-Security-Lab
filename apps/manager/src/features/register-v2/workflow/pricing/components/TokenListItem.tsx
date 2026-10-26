@@ -35,6 +35,7 @@ export const TokenListItem = <T extends TOKEN_SYMBOL>({
   networkFee,
   isNetworkFeeLoading = false,
   showNetworkFeeDetails = false,
+  feeTooltip,
 }: {
   readonly stablecoin: StablecoinBalance
   readonly selectedCoin: T | undefined
@@ -43,6 +44,8 @@ export const TokenListItem = <T extends TOKEN_SYMBOL>({
   readonly networkFee?: number
   readonly isNetworkFeeLoading?: boolean
   readonly showNetworkFeeDetails?: boolean
+  /** What the fee pays for. */
+  readonly feeTooltip?: React.ReactNode
 }) => {
   const { t } = useLingui()
   const isSelected = selectedCoin === stablecoin.symbol
@@ -110,9 +113,10 @@ export const TokenListItem = <T extends TOKEN_SYMBOL>({
       amountLabel={<Trans>balance</Trans>}
       fee={
         <Trans>
-          {chainName} · est. fee {formatUsd(networkFee ?? Number.NaN)}
+          {chainName} est. fee: {formatUsd(networkFee ?? Number.NaN)}
         </Trans>
       }
+      feeTooltip={feeTooltip}
       icon={
         <PaymentMethodIcon
           icon={<IconComponent className="size-full" />}

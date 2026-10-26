@@ -3,15 +3,16 @@ import { LoaderCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-/** The payment CTA, "Try again" when `onRetry` is set, with "What will I sign?" below. */
+/** The modal warning, the payment CTA ("Try again" when `onRetry` is set), and "What will I sign?". */
 export const PaymentAction = ({
   label,
+  warning,
   onNext,
   onRetry,
   canNext,
@@ -20,6 +21,7 @@ export const PaymentAction = ({
   helpMessage,
 }: {
   readonly label: ReactNode
+  readonly warning: ReactNode
   readonly onNext: () => void
   readonly onRetry: (() => void) | undefined
   readonly canNext: boolean
@@ -30,31 +32,42 @@ export const PaymentAction = ({
   const isEnabled = !isBusy && (canNext || !!onRetry)
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div className="flex w-full flex-col items-center gap-4">
+      {warning && (
+        <p
+          className="w-full text-center text-ens-signal-danger-800 text-lg"
+          role="alert"
+        >
+          {warning}
+        </p>
+      )}
       <Button
         aria-busy={isSettling}
         className={cn(
-          'h-14 w-full rounded bg-ens-blue font-medium font-mono text-sm text-white uppercase tracking-wider hover:bg-ens-blue-hover',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          isBusy && 'disabled:opacity-100',
+          'h-18 w-full rounded font-medium font-mono text-sm uppercase tracking-[1.12px]',
+          isEnabled || isBusy
+            ? 'bg-ens-lapis-500 text-white hover:bg-ens-blue-hover'
+            : 'bg-ens-quartz-100 text-ens-quartz-400',
+          'disabled:cursor-not-allowed disabled:opacity-100',
         )}
         disabled={!isEnabled}
         onClick={onRetry ?? onNext}
       >
-        {isSettling && (
-          <LoaderCircle aria-hidden="true" className="animate-spin" />
-        )}
+        {isBusy && <LoaderCircle aria-hidden="true" className="animate-spin" />}
         {onRetry ? <Trans>Try again</Trans> : label}
       </Button>
       {helpMessage && (
-        <Collapsible className="flex w-full flex-col items-center gap-3">
-          <CollapsibleTrigger className="rounded px-2 py-1 text-ens-quartz-500 text-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ens-blue">
+        <Popover>
+          <PopoverTrigger className="rounded px-2 py-1 text-ens-quartz-500 text-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ens-blue">
             <Trans>What will I sign?</Trans>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="w-full rounded-xl bg-ens-quartz-50 p-4 text-left text-ens-quartz-500 text-sm">
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-80 text-ens-quartz-500 text-sm"
+            side="top"
+          >
             {helpMessage}
-          </CollapsibleContent>
-        </Collapsible>
+          </PopoverContent>
+        </Popover>
       )}
     </div>
   )

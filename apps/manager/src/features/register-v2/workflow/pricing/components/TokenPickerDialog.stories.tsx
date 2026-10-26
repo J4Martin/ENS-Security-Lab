@@ -57,7 +57,9 @@ const l2Row = (
   },
   amountInRaw,
   isQuoteLoading: false,
+  isQuoteStale: false,
   hasQuoteFailed: false,
+  isShortOfGas: false,
 })
 
 const FIXTURE_L2_ROWS: readonly L2PaymentRow[] = [
@@ -270,13 +272,13 @@ export const FixtureTokenPickerContent = ({
         </div>
       </div>
       <PaymentReceipt
+        hasExistingBalance={false}
         isEstimate={false}
         state={{
           status: 'ready',
           figures: { total: 352, applied: 0, due: 352 },
         }}
         totalLabel={<Trans>Registration total</Trans>}
-        totalTooltip="Includes an estimate of the network fees."
       />
       <Button
         className={cn(
@@ -378,6 +380,19 @@ export const PayFromL2: Story = {
   },
 }
 
+export const PayFromL2NeedsEth: Story = {
+  args: {
+    ...InsufficientUSDC.args,
+    l2Rows: [
+      {
+        ...l2Row(baseSepolia, 400_000_000n, 'available', 352_012_573n),
+        isShortOfGas: true,
+      },
+      l2Row(optimismSepolia, 500_000_000n, 'available', 352_015_000n),
+    ],
+  },
+}
+
 export const WithAccountCredit: Story = {
   args: {
     initialSelectedToken: 'USDC',
@@ -390,6 +405,16 @@ export const WithAccountCredit: Story = {
       hcaCredit: 1.82,
       isLoading: false,
     },
+  },
+}
+
+export const WithAccountCreditAndL2: Story = {
+  args: {
+    ...WithAccountCredit.args,
+    l2Rows: [
+      l2Row(baseSepolia, 400_000_000n, 'available', 162_780_000n),
+      l2Row(optimismSepolia, 250_000_000n, 'available', 162_770_000n),
+    ],
   },
 }
 

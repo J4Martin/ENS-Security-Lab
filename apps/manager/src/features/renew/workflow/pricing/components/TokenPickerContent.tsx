@@ -85,7 +85,7 @@ export const TokenPickerContent = () => {
       <Trans>Signing renewal…</Trans>
     ))
     .with({ isAwaitingApproval: true }, () => <Trans>Approve in wallet</Trans>)
-    .with({ isQuoting: true }, () => <Trans>Calculating total…</Trans>)
+    .with({ isQuoting: true }, () => <Trans>Renew name</Trans>)
     .with({ isIntentRoute: true, isFullyCovered: true }, () => (
       <Trans>Sign renewal</Trans>
     ))
@@ -146,6 +146,7 @@ export const TokenPickerContent = () => {
       }
       isBusy={isAwaitingApproval}
       isConnected={isConnected}
+      isEstimate={isIntentRoute}
       isLoadingBalances={balances.isLoading}
       isQuotingFunding={isQuoting}
       label={label}
@@ -163,7 +164,6 @@ export const TokenPickerContent = () => {
       selectedToken={selectedToken}
       showNetworkFeeDetails={isIntentRoute}
       stablecoinBalances={balances.wallet}
-      subtitle={<Trans>Renew name</Trans>}
       totalLabel={<Trans>Renewal total</Trans>}
       walletDebitFor={walletDebitFor}
     />
