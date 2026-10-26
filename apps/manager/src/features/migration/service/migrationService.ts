@@ -104,6 +104,10 @@ import {
 export type { MigrationPlan } from './buildMigrationPlan'
 export type { MigrationStepDescriptor } from './buildStepDescriptors'
 
+export type MigrationSubmissionGate = {
+  readonly signal: AbortSignal
+}
+
 class MigrationError extends TaggedError('MigrationError')<{
   cause: unknown
   step?: string
@@ -263,6 +267,7 @@ const createTracker = (
 }
 
 type MigrationCtx = {
+  readonly submissionGate: MigrationSubmissionGate
   readonly wagmiConfig: WagmiConfig
   readonly publicClient: PublicClient
   readonly signer: Signer
@@ -460,6 +465,7 @@ const submitRequest = async (
   description: string,
   onSubmitted?: (hash: Hex) => void,
 ): Promise<{ readonly hash: Hex; readonly receipt: TransactionReceipt }> => {
+  ctx.submissionGate.signal.throwIfAborted()
   const txId = transactionManager.startTransaction(
     { type: 'custom', request },
     ctx.signer,
@@ -1924,6 +1930,7 @@ const executeRemainingAtomicBatches = async (params: {
           })
         : null
     assertSubnameRecreationEnabled(params.plan, params.canRecreateSubnames)
+    params.ctx.submissionGate.signal.throwIfAborted()
     persistPendingAtomicMigrationIntent(journalScope, intent)
     let submittedHash: Hex | undefined
     const onSubmitted = (nextHash: Hex) => {
@@ -2037,6 +2044,7 @@ const assertAtomicBatchingAvailable = async (
 
 export const executeMigration = async (params: {
   readonly plan: MigrationPlan
+  readonly submissionGate: MigrationSubmissionGate
   readonly wagmiConfig: WagmiConfig
   readonly publicClient: PublicClient
   readonly signer: Signer
@@ -2077,6 +2085,7 @@ export const executeMigration = async (params: {
   }
 
   const ctx: MigrationCtx = {
+    submissionGate: params.submissionGate,
     wagmiConfig,
     publicClient,
     signer,
