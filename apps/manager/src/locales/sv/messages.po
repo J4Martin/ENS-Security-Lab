@@ -18,6 +18,11 @@ msgstr ""
 "X-Crowdin-File: /src/locales/en/messages.po\n"
 "X-Crowdin-File-ID: 18\n"
 
+#. placeholder {0}: filteredGracePeriodNames.length
+#: src/features/migration/components/SelectNamesStepNameList.tsx
+msgid "{0, plural, one {# name in grace} other {# names in grace}}"
+msgstr ""
+
 #. placeholder {0}: wrapperSyncNames.length
 #: src/features/migration/components/UpgradeBanner.tsx
 msgid "{0, plural, one {# name needs syncing before it can be upgraded.} other {# names need syncing before they can be upgraded.}}"
@@ -242,11 +247,11 @@ msgid "<0>{0}</0> will be able to change the resolver for <1>{name}</1>"
 msgstr ""
 
 #: src/features/migration/components/SelectNamesStepSelectionOptions.tsx
-msgid "<0>{totalSelected}</0><1> out of </1><2>{visibleCount}</2><3> names selected</3>"
+msgid "<0>{totalSelected}</0><1> out of </1><2>{visibleCount}</2><3> eligible names selected</3>"
 msgstr ""
 
 #: src/features/migration/components/SelectNamesStepSelectionOptions.tsx
-msgid "<0>All </0><1>{visibleCount}</1><2> names selected</2>"
+msgid "<0>All </0><1>{visibleCount}</1><2> eligible names selected</2>"
 msgstr ""
 
 #: src/features/bulk-renew/components/BulkRenewDialog.tsx
@@ -1813,6 +1818,10 @@ msgstr ""
 msgid "Names could not be loaded"
 msgstr ""
 
+#: src/features/migration/components/SelectNamesStepNameList.tsx
+msgid "Names in grace will be renewed before being migrated"
+msgstr ""
+
 #: src/features/dashboard/components/FaqSection.tsx
 msgid "Names with deeper subnames, wrapped protections we cannot preserve, an incomplete subname list, or too many subnames for one safe upgrade must stay on ENSv1 for now. If subname copying is unavailable, the parent upgrade is blocked. There is no option to acknowledge the loss and continue. Your names keep working on ENSv1 while you wait."
 msgstr ""
@@ -1957,7 +1966,11 @@ msgid "Not enough USDC on {chainName}."
 msgstr ""
 
 #: src/features/migration/components/SelectNamesStepFooter.tsx
-msgid "Not enough USDC to renew these names. Add USDC to your wallet to continue."
+msgid "Not enough USDC to renew"
+msgstr ""
+
+#: src/features/migration/components/SelectNamesStepNameList.tsx
+msgid "Not enough USDC to renew the selected names. Add USDC or deselect this name."
 msgstr ""
 
 #: src/features/landing/check-availability/CheckAvailability.tsx
@@ -2473,10 +2486,6 @@ msgstr ""
 msgid "Renew"
 msgstr ""
 
-#: src/features/migration/components/NameRow.tsx
-msgid "Renew before upgrade"
-msgstr ""
-
 #: src/features/dashboard/components/NameRow.tsx
 #: src/features/renew/workflow/pricing/components/TokenPickerContent.tsx
 msgid "Renew name"
@@ -2553,6 +2562,10 @@ msgstr ""
 
 #: src/features/renew/components/RenewalFundingDialog.tsx
 msgid "Renewals are paid out of your smart account: the price in {symbol}, the network fee in USDC."
+msgstr ""
+
+#: src/features/migration/components/SelectNamesStepFooter.tsx
+msgid "Renewing <0>{count, plural, one {# name} other {# names}}</0> for <1>{amount} USDC</1>"
 msgstr ""
 
 #: src/features/renew/workflow/pricing/components/PricingSummaryCard.tsx
@@ -2998,6 +3011,10 @@ msgid "Some names could not be loaded"
 msgstr ""
 
 #: src/features/migration/service/migrationPreparationError.ts
+msgid "Some subnames can't upgrade because {parentName} hasn't been upgraded yet. Upgrade this parent first, or deselect those subnames."
+msgstr ""
+
+#: src/features/migration/service/migrationPreparationError.ts
 msgid "Some subnames can't upgrade until their parent name is upgraded. Upgrade the parent first, or deselect those subnames."
 msgstr ""
 
@@ -3242,6 +3259,10 @@ msgstr ""
 msgid "The page you're looking for doesn't exist or may have been moved."
 msgstr ""
 
+#: src/features/migration/components/SelectNamesStep.tsx
+msgid "The parent name {parentName} must be upgraded before this subname."
+msgstr ""
+
 #: src/features/notifications/settings/contact-methods/email.tsx
 msgid "The pending code will stop working."
 msgstr ""
@@ -3373,6 +3394,10 @@ msgstr ""
 
 #: src/features/migration/components/SelectNamesStep.tsx
 msgid "This subname must be included through its parent name. It cannot be copied on its own."
+msgstr ""
+
+#: src/features/migration/components/SelectNamesStep.tsx
+msgid "This subname's parent or registry is not supported for upgrading yet."
 msgstr ""
 
 #: src/features/migration/components/SubnameMigrationDialog.tsx
