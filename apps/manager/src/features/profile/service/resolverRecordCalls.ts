@@ -13,13 +13,17 @@
  */
 
 import { getSupportedInterfaces } from '@ensdomains/ensjs/public'
-import { resolverMulticallParameters as nodeSetterCalls } from '@ensdomains/ensjs/utils'
+import {
+  getAddressParameters,
+  resolverMulticallParameters as nodeSetterCalls,
+} from '@ensdomains/ensjs/utils'
 import {
   dnsEncodeName,
   resolverMulticallParameters as nameSetterCalls,
 } from '@ensdomains/ensjs/utils/v2'
 import {
   permissionedResolverLinkToRecordSnippet,
+  permissionedResolverResolveSnippet,
   permissionedResolverSetDataSnippet,
   permissionedResolverSetInterfaceSnippet,
 } from '@ensdomains/ensjs-abi/v2/permissionedResolver'
@@ -31,6 +35,7 @@ import {
   parseAbi,
   toFunctionSelector,
 } from 'viem'
+import { call } from 'viem/actions'
 
 export type ResolverSetterKind = 'name' | 'node'
 
@@ -75,6 +80,54 @@ export async function getResolverSetterKind(
     { address: resolverAddress, interfaces: [NAME_SETTER_INTERFACE_ID] },
   )
   return supportsNameSetters ? 'name' : 'node'
+}
+
+const EXTENDED_RESOLVER_INTERFACE_ID = '0x9061b923'
+
+const OFFCHAIN_LOOKUP_SELECTOR = '0x556f1830'
+
+const findRevertData = (error: unknown): Hex | undefined => {
+  for (let cause = error; cause; cause = (cause as { cause?: unknown }).cause) {
+    const data = (cause as { data?: unknown }).data
+    const hex =
+      typeof data === 'object' ? (data as { data?: unknown })?.data : data
+    if (typeof hex === 'string' && hex.startsWith('0x')) return hex as Hex
+  }
+  return undefined
+}
+
+/** Whether resolving `name` asks for a CCIP-Read lookup; the gateway is not called. */
+export async function isOffchainResolver(
+  publicClient: PublicClient,
+  resolverAddress: Address,
+  name: string,
+): Promise<boolean> {
+  const [isExtended] = await getSupportedInterfaces(
+    publicClient as unknown as Parameters<typeof getSupportedInterfaces>[0],
+    { address: resolverAddress, interfaces: [EXTENDED_RESOLVER_INTERFACE_ID] },
+  )
+  if (!isExtended) return false
+  try {
+    await call(
+      { ...publicClient, ccipRead: false },
+      {
+        to: resolverAddress,
+        data: encodeFunctionData({
+          abi: permissionedResolverResolveSnippet,
+          functionName: 'resolve',
+          args: [
+            dnsEncodeName(name),
+            encodeFunctionData(getAddressParameters({ name, coin: 60 })),
+          ],
+        }),
+      },
+    )
+    return false
+  } catch (error) {
+    const data = findRevertData(error)
+    if (data === undefined) throw error
+    return data.startsWith(OFFCHAIN_LOOKUP_SELECTOR)
+  }
 }
 
 const encodeCalls = (calls: readonly unknown[]): Hex[] =>
