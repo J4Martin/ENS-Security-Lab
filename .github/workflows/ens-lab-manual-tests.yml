@@ -1,0 +1,67 @@
+name: ENS Security Lab - Local Tests
+
+# Manual-only, fork-specific local tests. No deployments or mainnet/testnet RPC calls.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Local test suite (no live networks)"
+        required: true
+        type: choice
+        default: core
+        options:
+          - core
+          - portal
+          - manager
+          - api
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ens-lab-local-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  local-unit-tests:
+    if: github.repository == 'J4Martin/ENS-Security-Lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      RUN_REAL_DB_TESTS: "0"
+    steps:
+      - name: Checkout dedicated security lab
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Node and pnpm
+        uses: pnpm/setup@v3
+        env:
+          PNPM_CONFIG_FROZEN_LOCKFILE: true
+        with:
+          runtime: node@lts
+          cache: true
+
+      - name: Restore exact dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Core - permits, primary names, renewals, Telegram OIDC
+        if: inputs.target == 'core'
+        run: |
+          pnpm --filter @ens-apps/transaction-manager exec vitest run src/helpers/hca-intent-funding.test.ts
+          pnpm --filter manager exec vitest run src/features/profile/service/setPrimaryName.test.ts src/features/renew/service/hcaRenewal.test.ts
+          pnpm --filter api-worker exec vitest run src/services/telegram/oidc.test.ts src/services/telegram/login.test.ts
+
+      - name: Portal - local unit tests
+        if: inputs.target == 'portal'
+        run: pnpm --filter portal test
+
+      - name: Manager - local unit tests
+        if: inputs.target == 'manager'
+        run: pnpm --filter manager test
+
+      - name: API Worker - local unit tests
+        if: inputs.target == 'api'
+        run: pnpm --filter api-worker test
