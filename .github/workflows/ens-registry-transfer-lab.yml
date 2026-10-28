@@ -1,0 +1,70 @@
+name: ENS Registry Transfer - Isolated Solidity Tests
+
+# Run on the dedicated research branch only. Contract checkout is read-only,
+# and all test state is local to the ephemeral GitHub Actions EVM.
+on:
+  push:
+    branches:
+      - lab/registry-transfer-boundaries-20261028
+    paths:
+      - .github/workflows/ens-registry-transfer-lab.yml
+      - security-tests/RegistryTransferRolesLab.t.sol
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry-transfer-local:
+    if: github.repository == 'J4Martin/ENS-Security-Lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FOUNDRY_ETH_RPC_URL: ''
+      ETH_RPC_URL: ''
+      CI: 'true'
+    steps:
+      - name: Checkout pinned official ENSv2 Solidity source
+        uses: actions/checkout@v4
+        with:
+          repository: ensdomains/contracts-v2
+          ref: 4f47cbcc11462fb413196e6b5c0f8090247a6c08
+          path: ens-contracts
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout research-only regression tests
+        uses: actions/checkout@v4
+        with:
+          repository: J4Martin/ENS-Security-Lab
+          ref: lab/registry-transfer-boundaries-20261028
+          path: lab-source
+          persist-credentials: false
+
+      - name: Install isolated Solidity compiler and Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Confirm pinned source and disallow external RPC
+        working-directory: ens-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "4f47cbcc11462fb413196e6b5c0f8090247a6c08"
+          test -z "$ETH_RPC_URL"
+          test -z "$FOUNDRY_ETH_RPC_URL"
+          forge --version
+
+      - name: Baseline - original registry third-party safe transfer guard
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/registry/PermissionedRegistry.t.sol --match-test test_transferWithoutOnlyAssignee -vv
+
+      - name: Stage two adversarial tests in ephemeral local checkout
+        run: |
+          set -euo pipefail
+          cp lab-source/security-tests/RegistryTransferRolesLab.t.sol ens-contracts/contracts/test/unit/registry/RegistryTransferRolesLab.t.sol
+
+      - name: Security lab - safe-transfer and delegated-role boundary
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/registry/RegistryTransferRolesLab.t.sol --match-test 'test_lab_' -vv
