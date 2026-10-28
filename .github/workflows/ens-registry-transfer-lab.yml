@@ -9,6 +9,7 @@ on:
     paths:
       - .github/workflows/ens-registry-transfer-lab.yml
       - security-tests/RegistryTransferRolesLab.t.sol
+      - security-tests/MigrationPostTransferRolesLab.t.sol
   workflow_dispatch:
 
 permissions:
@@ -68,3 +69,12 @@ jobs:
       - name: Security lab - safe-transfer and delegated-role boundary
         working-directory: ens-contracts/contracts
         run: forge test --match-path test/unit/registry/RegistryTransferRolesLab.t.sol --match-test 'test_lab_' -vv
+
+      - name: Stage migration transfer integration tests in local checkout
+        run: |
+          set -euo pipefail
+          cp lab-source/security-tests/MigrationPostTransferRolesLab.t.sol ens-contracts/contracts/test/unit/migration/MigrationPostTransferRolesLab.t.sol
+
+      - name: Security lab - real local ENSv1-to-v2 migration and owner transfer
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/migration/MigrationPostTransferRolesLab.t.sol --match-test 'test_lab_' -vv
