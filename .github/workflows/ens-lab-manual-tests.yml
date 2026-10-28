@@ -2,6 +2,13 @@ name: ENS Security Lab - Local Tests
 
 # Manual-only, fork-specific local tests. No deployments or mainnet/testnet RPC calls.
 on:
+  # Trigger only this isolated adversarial lab branch. No deployment workflows.
+  push:
+    branches:
+      - lab/migration-role-boundaries-20261028
+    paths:
+      - apps/manager/src/features/migration/service/retainedManagerResolver.security.test.ts
+      - .github/workflows/ens-lab-manual-tests.yml
   workflow_dispatch:
     inputs:
       target:
@@ -48,7 +55,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Core - permits, primary names, renewals, Telegram OIDC
-        if: inputs.target == 'core'
+        if: inputs.target == 'core' || github.event_name == 'push'
         run: |
           pnpm --filter @ens-apps/transaction-manager exec vitest run src/helpers/hca-intent-funding.test.ts
           pnpm --filter manager exec vitest run src/features/profile/service/setPrimaryName.test.ts src/features/renew/service/hcaRenewal.test.ts
@@ -56,7 +63,7 @@ jobs:
 
       # Additional offline adversarial coverage; no RPC/network transactions.
       - name: Migration retained-manager security regression
-        if: inputs.target == 'core'
+        if: inputs.target == 'core' || github.event_name == 'push'
         run: |
           pnpm --filter api-worker run build:types
           pnpm --filter manager exec vitest run src/features/migration/service/retainedManagerResolver.security.test.ts
