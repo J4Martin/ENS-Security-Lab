@@ -50,6 +50,28 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
         return hca.validate(validator, digest, envelope);
     }
 
+    // Compute the digest and envelope BEFORE setting the revert expectation:
+    // the digest harness is an external view call in its own right.
+    function _expectRefundRevert(
+        SessionEnableProofFixture memory proof,
+        bytes32 permissionId,
+        HCAOwnerAndSessionValidator.GasRefund memory refund,
+        bytes memory operation,
+        uint256 nonce,
+        bytes memory expectedRevert
+    )
+        internal
+    {
+        bytes32 digest = validator.singleChainDigestWithRefundHarness(
+            address(hca), nonce, operation, refund
+        );
+        bytes memory envelope = _initialRefundEnvelope(
+            permissionId, proof, nonce, refund, operation, digest
+        );
+        vm.expectRevert(expectedRevert);
+        hca.validate(validator, digest, envelope);
+    }
+
     function test_lab_rejectsExchangeRateAboveOwnerSignedCeiling() public {
         (
             SessionEnableProofFixture memory proof,
@@ -62,8 +84,10 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
         assertEq(_checkRefund(proof, permissionId, refund, operation, 101), ERC1271_MAGICVALUE);
 
         refund.exchangeRate += 1;
-        vm.expectRevert(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector);
-        _checkRefund(proof, permissionId, refund, operation, 102);
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 102,
+            abi.encodeWithSelector(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector)
+        );
     }
 
     function test_lab_rejectsGasOverheadAboveOwnerSignedCeiling() public {
@@ -76,8 +100,10 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
 
         assertEq(_checkRefund(proof, permissionId, refund, operation, 103), ERC1271_MAGICVALUE);
         refund.overhead += 1; // changes only the lower gas-overhead component
-        vm.expectRevert(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector);
-        _checkRefund(proof, permissionId, refund, operation, 104);
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 104,
+            abi.encodeWithSelector(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector)
+        );
     }
 
     function test_lab_rejectsDifferentRefundToken() public {
@@ -90,8 +116,10 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
 
         assertEq(_checkRefund(proof, permissionId, refund, operation, 105), ERC1271_MAGICVALUE);
         refund.token = makeAddr("unauthorized-refund-token");
-        vm.expectRevert(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector);
-        _checkRefund(proof, permissionId, refund, operation, 106);
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 106,
+            abi.encodeWithSelector(HCAOwnerAndSessionValidator.GasRefundNotAllowed.selector)
+        );
     }
 
     function test_lab_rejectsUnapprovedERC20Spender() public {
@@ -110,8 +138,10 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
         );
         operation = _encodeExecutions(executions);
 
-        vm.expectRevert(HCAOwnerAndSessionValidator.PolicyRuleFailed.selector);
-        _checkRefund(proof, permissionId, refund, operation, 108);
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 108,
+            abi.encodeWithSelector(HCAOwnerAndSessionValidator.PolicyRuleFailed.selector)
+        );
     }
 
     function test_lab_rejectsArbitraryERC20Transfer() public {
@@ -130,14 +160,14 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
         );
         operation = _encodeExecutions(executions);
 
-        vm.expectRevert(
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 110,
             abi.encodeWithSelector(
                 HCAOwnerAndSessionValidator.ActionNotAllowed.selector,
                 paymentToken,
                 IERC20.transfer.selector
             )
         );
-        _checkRefund(proof, permissionId, refund, operation, 110);
     }
 
     function test_lab_rejectsOldOwnerSessionProofAfterOwnershipChange() public {
@@ -157,7 +187,9 @@ contract HcaPolicyBoundariesLab is HCAOwnerAndSessionValidatorTest {
         assertEq(hca.owner(), newOwner);
         assertEq(hca.sessionNonce(), proof.sessionNonce);
 
-        vm.expectRevert(HCAOwnerAndSessionValidator.InvalidSigner.selector);
-        _checkRefund(proof, permissionId, refund, operation, 112);
+        _expectRefundRevert(
+            proof, permissionId, refund, operation, 112,
+            abi.encodeWithSelector(HCAOwnerAndSessionValidator.InvalidSigner.selector)
+        );
     }
 }
