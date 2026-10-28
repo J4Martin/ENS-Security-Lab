@@ -58,6 +58,13 @@ jobs:
         if: inputs.target == 'portal'
         run: pnpm --filter portal test
 
+      # Manager's Vitest type checker imports api-worker/hc, which is generated
+      # into workers/api-worker/dist/src/hc.d.ts. Unlike pnpm typecheck, the
+      # manager's "test" script does not invoke its pretypecheck script.
+      - name: Build API Worker type declarations for Manager
+        if: inputs.target == 'manager'
+        run: pnpm --filter api-worker run build:types
+
       - name: Manager - local unit tests
         if: inputs.target == 'manager'
         run: pnpm --filter manager test
