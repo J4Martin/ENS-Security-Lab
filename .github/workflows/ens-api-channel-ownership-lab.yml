@@ -54,8 +54,11 @@ jobs:
         env:
           PNPM_CONFIG_FROZEN_LOCKFILE: true
         with:
+          version: 12.4.2
           runtime: node@lts
           cache: true
+          working-directory: upstream
+          install: false
 
       - name: Install pinned dependencies
         working-directory: upstream
