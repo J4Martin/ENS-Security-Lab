@@ -18,7 +18,14 @@ import {
 } from '@ensdomains/ensjs/utils'
 import { err, fromPromise, fromThrowable, ok, okAsync } from 'neverthrow'
 import type { Client, PublicClient, Transport } from 'viem'
-import { type Address, encodeFunctionData, type Hex, zeroAddress } from 'viem'
+import {
+  type Address,
+  decodeErrorResult,
+  encodeFunctionData,
+  type Hex,
+  parseAbi,
+  zeroAddress,
+} from 'viem'
 import { bigname } from '@/lib/bigname'
 import { publicClient, type sepoliaWithEns } from '@/lib/wagmi'
 import { safeGetClient } from '@/lib/wagmi/helpers'
@@ -76,6 +83,23 @@ const isSupportedCoinType = (coinType: number): boolean =>
   safeGetCoderFromCoin(coinType).isOk()
 
 const MAX_RESOLVER_SPLIT_DEPTH = 1
+
+const GATEWAY_ERROR_ABI = parseAbi([
+  'error HttpError(uint16 status, string message)',
+])
+// Statuses a gateway answers for a name it does not know (World answers 400).
+const UNKNOWN_NAME_STATUSES: ReadonlySet<number> = new Set([400, 404])
+
+// A resolver that reverts with no reason, or a gateway that answers 400 or 404,
+// does not know the name. viem encodes every other gateway failure as an
+// HttpError or Error(string).
+const isNameRejection = (returnData: Hex): boolean =>
+  returnData === '0x' ||
+  fromThrowable(() =>
+    decodeErrorResult({ abi: GATEWAY_ERROR_ABI, data: returnData }),
+  )()
+    .map(({ args: [status] }) => UNKNOWN_NAME_STATUSES.has(status))
+    .unwrapOr(false)
 
 const getRecordKeys = ResultFn(async function* (
   client: Client<Transport, typeof sepoliaWithEns>,
@@ -216,8 +240,11 @@ export const getProfileRecords = ResultFn(async function* (name: string) {
     resolveData(data),
     (error) => new GetProfileRecordsError({ cause: error }),
   )
-  // A gateway that is down fails every read; that is not an empty profile.
-  const failedRead = resolution?.resolvedData.find((item) => !item.success)
+  // A gateway that is down fails every read; that is not an empty profile. One
+  // that rejects every read does not know the name, which is.
+  const failedRead = resolution?.resolvedData.find(
+    (item) => !(item.success || isNameRejection(item.returnData)),
+  )
   if (failedRead && resolution?.resolvedData.every((item) => !item.success))
     return err(new GetProfileRecordsError({ cause: failedRead.returnData }))
 
