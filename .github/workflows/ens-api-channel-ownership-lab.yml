@@ -1,0 +1,71 @@
+name: ENS API - Synthetic Channel Ownership Boundaries
+
+# Local-only route regression against an immutable upstream revision.
+# Never invokes deployed endpoints, public RPCs, or real accounts.
+on:
+  push:
+    branches:
+      - lab/api-channel-ownership-20261028
+    paths:
+      - .github/workflows/ens-api-channel-ownership-lab.yml
+      - security-tests/api-channel-ownership.lab.test.ts
+
+permissions:
+  contents: read
+
+jobs:
+  api-channel-ownership-local:
+    if: github.repository == 'J4Martin/ENS-Security-Lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      RUN_REAL_DB_TESTS: '0'
+      ETH_RPC_URL: ''
+      SEPOLIA_RPC_URL: ''
+      MAINNET_RPC_URL: ''
+    steps:
+      - name: Checkout immutable official ENS Apps revision
+        uses: actions/checkout@v4
+        with:
+          repository: ensdomains/apps-monorepo
+          ref: 89185526058a34ac56e522cc7e83aae59779e86d
+          path: upstream
+          persist-credentials: false
+
+      - name: Checkout triggering lab revision
+        uses: actions/checkout@v4
+        with:
+          repository: J4Martin/ENS-Security-Lab
+          ref: ${{ github.sha }}
+          path: lab-source
+          persist-credentials: false
+
+      - name: Verify pinned source and install Node toolchain
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = "89185526058a34ac56e522cc7e83aae59779e86d"
+          test -z "$ETH_RPC_URL"
+          test -z "$SEPOLIA_RPC_URL"
+          test -z "$MAINNET_RPC_URL"
+
+      - name: Install Node and pnpm
+        uses: pnpm/setup@v3
+        env:
+          PNPM_CONFIG_FROZEN_LOCKFILE: true
+        with:
+          runtime: node@lts
+          cache: true
+
+      - name: Install pinned dependencies
+        working-directory: upstream
+        run: pnpm install --frozen-lockfile
+
+      - name: Place synthetic regression in ephemeral upstream checkout
+        run: |
+          cp lab-source/security-tests/api-channel-ownership.lab.test.ts \
+             upstream/workers/api-worker/src/app/routes/notifications/channels/ownership.lab.test.ts
+
+      - name: Execute API channel ownership tests locally
+        working-directory: upstream
+        run: pnpm --filter api-worker exec vitest run src/app/routes/notifications/channels/ownership.lab.test.ts
