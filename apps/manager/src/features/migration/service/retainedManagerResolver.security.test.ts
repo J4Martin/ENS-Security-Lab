@@ -14,7 +14,6 @@ import {
 // Independent, offline regression checks for V1 -> V2 retained-manager rights.
 // All addresses and RPC responses are synthetic. No external chain or wallet.
 const WALLET: Address = '0x00000000000000000000000000000000000000b1'
-const NEXT_WALLET: Address = '0x00000000000000000000000000000000000000b2'
 const HCA: Address = '0x00000000000000000000000000000000000000a1'
 const NEXT_HCA: Address = '0x00000000000000000000000000000000000000a2'
 const MANAGER: Address = '0x00000000000000000000000000000000000000c1'
@@ -92,7 +91,6 @@ describe('Security lab: migration retained-manager role boundaries', () => {
       name: 'alice.eth',
     })
     expect(oldAddress.toLowerCase()).not.toBe(newAddress.toLowerCase())
-    expect(NEXT_WALLET).not.toBe(WALLET)
   })
 
   it('verifies the exact retained manager on the expected resolver before reuse', async () => {
@@ -128,10 +126,12 @@ describe('Security lab: migration retained-manager role boundaries', () => {
     expect(readContract).not.toHaveBeenCalled()
   })
 
-  it.each([
+  const invalidManagerRoles: readonly (readonly [string, bigint])[] = [
     ['missing manager authorization', 0n],
     ['unexpected admin permissions', RETAINED_MANAGER_RECORD_ROLES | (1n << 128n)],
-  ])('rejects a previously deployed resolver with %s', async (_, managerRoles) => {
+  ]
+
+  it.each(invalidManagerRoles)('rejects a previously deployed resolver with %s', async (_, managerRoles) => {
     const { publicClient } = fakeChain({ managerRoles })
     await expect(check(publicClient)).rejects.toMatchObject({
       invariant: 'resolver-writer-roles',
@@ -139,10 +139,12 @@ describe('Security lab: migration retained-manager role boundaries', () => {
     })
   })
 
-  it.each([
+  const revokedRootRoles: readonly (readonly [string, SimulatedState])[] = [
     ['HCA root rights revoked', { hcaHasRootRoles: false }],
     ['wallet root rights revoked', { walletHasRootRoles: false }],
-  ])('refuses retained-manager reuse when %s', async (_, state) => {
+  ]
+
+  it.each(revokedRootRoles)('refuses retained-manager reuse when %s', async (_, state) => {
     const { publicClient } = fakeChain(state)
     await expect(check(publicClient)).rejects.toMatchObject({
       invariant: 'resolver-writer-roles',
