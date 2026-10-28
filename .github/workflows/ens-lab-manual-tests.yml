@@ -54,6 +54,13 @@ jobs:
           pnpm --filter manager exec vitest run src/features/profile/service/setPrimaryName.test.ts src/features/renew/service/hcaRenewal.test.ts
           pnpm --filter api-worker exec vitest run src/services/telegram/oidc.test.ts src/services/telegram/login.test.ts
 
+      # Additional offline adversarial coverage; no RPC/network transactions.
+      - name: Migration retained-manager security regression
+        if: inputs.target == 'core'
+        run: |
+          pnpm --filter api-worker run build:types
+          pnpm --filter manager exec vitest run src/features/migration/service/retainedManagerResolver.security.test.ts
+
       - name: Portal - local unit tests
         if: inputs.target == 'portal'
         run: pnpm --filter portal test
