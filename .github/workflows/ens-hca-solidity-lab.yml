@@ -24,11 +24,11 @@ jobs:
       ETH_RPC_URL: ''
       CI: 'true'
     steps:
-      - name: Checkout pinned ENSv2 contracts source (separate from apps fork)
+      - name: Checkout official mainnet-linked ENSv2 contracts source (separate from apps fork)
         uses: actions/checkout@v4
         with:
           repository: ensdomains/contracts-v2
-          ref: 95de2ee0e9994a39712977a8dea495b56301a129
+          ref: 4f47cbcc11462fb413196e6b5c0f8090247a6c08
           path: ens-contracts
           submodules: recursive
           persist-credentials: false
@@ -51,11 +51,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "95de2ee0e9994a39712977a8dea495b56301a129"
+          test "$(git rev-parse HEAD)" = "4f47cbcc11462fb413196e6b5c0f8090247a6c08"
           forge --version
           test -z "${ETH_RPC_URL}"
           test -z "${FOUNDRY_ETH_RPC_URL}"
-          echo "Pinned offline contracts-v2 source confirmed; no RPC configured."
+          echo "Official mainnet-linked contracts-v2 source confirmed; no RPC configured."
 
       - name: Solidity - HCA owner/session validation (isolated local EVM)
         working-directory: ens-contracts/contracts
