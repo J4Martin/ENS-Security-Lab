@@ -1,0 +1,63 @@
+name: ENS HCA - Pinned Local Solidity Tests
+
+# Run exclusively in the dedicated research fork. Never connects to RPC,
+# deploys to public networks, or accesses secrets/production services.
+on:
+  push:
+    branches:
+      - lab/hca-onchain-local-20261028
+    paths:
+      - .github/workflows/ens-hca-solidity-lab.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hca-local-validator:
+    if: github.repository == 'J4Martin/ENS-Security-Lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FOUNDRY_ETH_RPC_URL: ''
+      ETH_RPC_URL: ''
+      CI: 'true'
+    steps:
+      - name: Checkout pinned ENSv2 contracts source (separate from apps fork)
+        uses: actions/checkout@v4
+        with:
+          repository: ensdomains/contracts-v2
+          ref: 95de2ee0e9994a39712977a8dea495b56301a129
+          path: ens-contracts
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install local EVM and Solidity testing tools
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Verify pin, runner, and local-only configuration
+        working-directory: ens-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "95de2ee0e9994a39712977a8dea495b56301a129"
+          forge --version
+          test -z "${ETH_RPC_URL}"
+          test -z "${FOUNDRY_ETH_RPC_URL}"
+          echo "Pinned offline contracts-v2 source confirmed; no RPC configured."
+
+      - name: Solidity - HCA owner/session validation (isolated local EVM)
+        working-directory: ens-contracts/contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge test --match-path test/unit/hca/HCAOwnerAndSessionValidator.t.sol --fuzz-runs 256 -vv
+
+      - name: Solidity - HCA funding/session validation (isolated local EVM)
+        working-directory: ens-contracts/contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge test --match-path test/unit/hca/HCAFundingSessionValidator.t.sol --fuzz-runs 256 -vv
