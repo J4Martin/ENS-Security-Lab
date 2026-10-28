@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity >=0.8.13;
 
 // Reproduce migration and subsequent ERC-1155 ownership transfer on a
 // fully synthetic, offline ENSv1/ENSv2 Foundry fixture.
