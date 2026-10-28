@@ -8,6 +8,7 @@ on:
       - lab/hca-onchain-local-20261028
     paths:
       - .github/workflows/ens-hca-solidity-lab.yml
+      - security-tests/HcaCrossAccountReplay.t.sol
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,14 @@ jobs:
           ref: 95de2ee0e9994a39712977a8dea495b56301a129
           path: ens-contracts
           submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout our test additions (research fork only)
+        uses: actions/checkout@v4
+        with:
+          repository: J4Martin/ENS-Security-Lab
+          ref: lab/hca-onchain-local-20261028
+          path: lab-source
           persist-credentials: false
 
       - name: Install local EVM and Solidity testing tools
@@ -61,3 +70,17 @@ jobs:
         run: |
           set -euo pipefail
           forge test --match-path test/unit/hca/HCAFundingSessionValidator.t.sol --fuzz-runs 256 -vv
+
+      - name: Stage our adversarial tests in the ephemeral local checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp lab-source/security-tests/HcaCrossAccountReplay.t.sol ens-contracts/contracts/test/unit/hca/HcaCrossAccountReplay.t.sol
+          echo "Copied a test ONLY inside this runner. The upstream GitHub repository remains untouched."
+
+      - name: New adversarial check - reject HCA A signature on HCA B
+        working-directory: ens-contracts/contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          forge test --match-path test/unit/hca/HcaCrossAccountReplay.t.sol --match-test 'test_lab_' -vv
