@@ -22,7 +22,7 @@ contract HcaCrossAccountReplayLab is HCAOwnerAndSessionValidatorTest {
 
         // Negative control: different HCA address but SAME owner EOA must not replay A's proof.
         MockStandaloneHCA hcaB = new MockStandaloneHCA(owner);
-        vm.expectRevert(HCAOwnerAndSessionValidator.InvalidSigner.selector);
+        vm.expectRevert(HCAOwnerAndSessionValidator.InvalidSessionData.selector);
         hcaB.validate(validator, digest, envelope);
     }
 
@@ -45,7 +45,7 @@ contract HcaCrossAccountReplayLab is HCAOwnerAndSessionValidatorTest {
         assertEq(hca.validate(validator, digest, envelope), ERC1271_MAGICVALUE);
 
         MockStandaloneHCA hcaB = new MockStandaloneHCA(owner);
-        vm.expectRevert(HCAOwnerAndSessionValidator.InvalidSigner.selector);
+        vm.expectRevert(HCAOwnerAndSessionValidator.InvalidSessionData.selector);
         hcaB.validate(validator, digest, envelope);
     }
 }
