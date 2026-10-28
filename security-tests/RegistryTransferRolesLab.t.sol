@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity >=0.8.13;
 
 // Offline-only security regressions on the pinned ENSv2 registry source.
 // No RPC endpoints, public-network transactions, or external wallets.
