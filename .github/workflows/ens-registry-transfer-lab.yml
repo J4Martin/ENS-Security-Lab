@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: J4Martin/ENS-Security-Lab
-          ref: lab/registry-transfer-boundaries-20261028
+          ref: ${{ github.sha }}
           path: lab-source
           persist-credentials: false
 
