@@ -1,0 +1,74 @@
+name: ENS HCA - Delegation Policy Boundaries
+
+# Permission-boundary regression checks on a pinned official Solidity commit.
+# No mainnet/testnet RPC, external account, contract deployment, or secret access.
+on:
+  push:
+    branches:
+      - lab/hca-policy-boundaries-20261028
+    paths:
+      - .github/workflows/ens-hca-policy-lab.yml
+      - security-tests/HcaPolicyBoundaries.t.sol
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hca-policy-local:
+    if: github.repository == 'J4Martin/ENS-Security-Lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FOUNDRY_ETH_RPC_URL: ''
+      ETH_RPC_URL: ''
+      CI: 'true'
+    steps:
+      - name: Checkout immutable official ENSv2 Solidity revision
+        uses: actions/checkout@v4
+        with:
+          repository: ensdomains/contracts-v2
+          ref: 4f47cbcc11462fb413196e6b5c0f8090247a6c08
+          path: ens-contracts
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout exactly the triggering research commit
+        uses: actions/checkout@v4
+        with:
+          repository: J4Martin/ENS-Security-Lab
+          ref: ${{ github.sha }}
+          path: lab-source
+          persist-credentials: false
+
+      - name: Install Solidity test toolchain
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Confirm immutable revision and no external RPC
+        working-directory: ens-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "4f47cbcc11462fb413196e6b5c0f8090247a6c08"
+          test -z "$ETH_RPC_URL"
+          test -z "$FOUNDRY_ETH_RPC_URL"
+          forge --version
+
+      - name: Official HCA owner and fixed-session test suite
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/hca/HCAOwnerAndSessionValidator.t.sol -vv
+
+      - name: Official HCA funding-session test suite
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/hca/HCAFundingSessionValidator.t.sol -vv
+
+      - name: Copy safe policy boundary regressions into ephemeral EVM test suite
+        run: |
+          set -euo pipefail
+          cp lab-source/security-tests/HcaPolicyBoundaries.t.sol ens-contracts/contracts/test/unit/hca/HcaPolicyBoundaries.t.sol
+
+      - name: New HCA proof, refund, and transfer permission boundary tests
+        working-directory: ens-contracts/contracts
+        run: forge test --match-path test/unit/hca/HcaPolicyBoundaries.t.sol --match-test 'test_lab_' -vv
