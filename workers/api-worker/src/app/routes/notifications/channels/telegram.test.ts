@@ -34,7 +34,7 @@ describe('Telegram HTTP contract', () => {
     ).toBe(404)
   })
 
-  it('renders public callback failures with private, non-executable responses', async () => {
+  it('renders public callback failures with private, nonce-restricted responses', async () => {
     vi.spyOn(logger, 'warn').mockImplementation(() => undefined)
     const response = await telegramRoutes.request(
       '/telegram/callback?state=invalid&code=private-code&redirect_uri=https://untrusted.example',
@@ -46,13 +46,19 @@ describe('Telegram HTTP contract', () => {
     expect(response.status).toBe(200)
     expect(nonce).toBeTruthy()
     expect(response.headers.get('Content-Security-Policy')).toBe(
-      `default-src 'none'; style-src 'nonce-${nonce}'; font-src https://fonts.ens.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`,
+      `default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'; font-src https://fonts.ens.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`,
     )
     expect(response.headers.get('Cache-Control')).toBe('no-store')
     expect(response.headers.get('Referrer-Policy')).toBe('no-referrer')
     expect(page).toContain('<h1>Telegram not connected</h1>')
     expect(page).not.toContain('private-code')
     expect(page).not.toContain('untrusted.example')
-    expect(page).not.toContain('<script')
+    // The callback intentionally includes one fixed script for closing the tab.
+    // Its nonce must match the Content Security Policy. Do not admit more scripts.
+    expect(page.match(/<script\b/g)).toHaveLength(1)
+    expect(page).toContain(`<script nonce="${nonce}">`)
+    expect(page).toContain(
+      "document.getElementById('close-window').addEventListener('click', () => window.close());",
+    )
   })
 })
