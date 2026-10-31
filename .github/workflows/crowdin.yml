@@ -1,12 +1,8 @@
 name: Crowdin
 
+# Fork security laboratory: Crowdin synchronization is manual-only.
+# No periodic uploads or automatic writes to upstream project translation service.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/manager/src/locales/en/messages.po'
-  schedule:
-    - cron: '0 */4 * * *'
   workflow_dispatch:
     inputs:
       action:
