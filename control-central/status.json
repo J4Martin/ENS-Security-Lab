@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "projectId": "bug-bounty",
+  "observedAt": "2026-11-26T05:19:00Z",
+  "items": [],
+  "baseline": {
+    "sourceCommit": "4df117013ad00c468f91c1d6ea5a34671af0427c",
+    "classification": "publisher_initialization_only",
+    "note": "No project roadmap imported. Empty items is not evidence of completion."
+  }
+}
