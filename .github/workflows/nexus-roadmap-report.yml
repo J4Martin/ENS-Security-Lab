@@ -1,0 +1,20 @@
+name: NEXUS roadmap report validation
+on:
+  pull_request:
+    paths:
+      - 'control-central/**'
+      - '.github/workflows/nexus-roadmap-report.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'control-central/**'
+      - '.github/workflows/nexus-roadmap-report.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 control-central/publish.py --check

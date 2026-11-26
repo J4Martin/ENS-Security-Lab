@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "projectId": "bug-bounty",
+  "observedAt": "2026-11-26T06:04:01Z",
+  "items": [
+    {
+      "id": "NEXUS-ENS-QA-SECURITY",
+      "title": "Resolver comprobación de seguridad fallida",
+      "status": "blocked",
+      "evidence": "https://github.com/J4Martin/ENS-Security-Lab/actions/runs/45761130786",
+      "note": "CI de la candidata del publicador: failure. No es un hallazgo de vulnerabilidad confirmado."
+    },
+    {
+      "id": "NEXUS-ENS-QA-QUALITY",
+      "title": "Resolver pruebas generales de calidad fallidas",
+      "status": "blocked",
+      "evidence": "https://github.com/J4Martin/ENS-Security-Lab/actions/runs/45761130783",
+      "note": "CI de la candidata: failure; investigar antes de integrar."
+    },
+    {
+      "id": "NEXUS-ENS-PUBLISHER",
+      "title": "Validar contrato del publicador NEXUS",
+      "status": "done",
+      "evidence": "https://github.com/J4Martin/ENS-Security-Lab/actions/runs/45761130936",
+      "note": "Validación individual PASS; integración global bloqueada."
+    }
+  ],
+  "baseline": {
+    "classification": "observed_ci_work_queue_not_master_roadmap",
+    "sourceCommit": "04534cd809563f4854bc4e1133cb926055b88e81",
+    "coverage": "partial; no original ENS laboratory roadmap located; no vulnerability details"
+  }
+}
